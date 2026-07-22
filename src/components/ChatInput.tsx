@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@patternfly/react-core'
-import { PaperPlaneIcon } from '@patternfly/react-icons'
+import { PaperPlaneIcon, StopCircleIcon } from '@patternfly/react-icons'
 
 interface ChatInputProps {
   onSend: (content: string) => void
   isStreaming: boolean
+  onStop?: () => void
 }
 
-export function ChatInput({ onSend, isStreaming }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, onStop }: ChatInputProps) {
   const [value, setValue] = useState('')
+  const [focused, setFocused] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -34,50 +36,77 @@ export function ChatInput({ onSend, isStreaming }: ChatInputProps) {
 
   return (
     <div style={{
-      padding: '12px 24px 16px',
+      padding: '8px 16px 10px',
       borderTop: '1px solid var(--pf-t--global--border--color--default)',
       background: 'var(--pf-t--global--background--color--primary--default)',
     }}>
-      <div style={{ position: 'relative' }}>
+      <div style={{
+        position: 'relative',
+        border: focused
+          ? '1px solid var(--pf-t--global--color--brand--default)'
+          : '1px solid var(--pf-t--global--border--color--default)',
+        borderRadius: 6,
+        background: 'var(--pf-t--global--background--color--secondary--default)',
+        transition: 'border-color 0.15s',
+      }}>
         <textarea
           ref={textareaRef}
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isStreaming ? 'Waiting for response...' : 'Send a message...'}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={isStreaming ? 'Generating...' : 'Ask anything... (Enter to send)'}
           disabled={isStreaming}
           rows={1}
           style={{
             width: '100%',
             resize: 'none',
-            border: '1px solid var(--pf-t--global--border--color--default)',
-            borderRadius: 12,
-            padding: '12px 48px 12px 16px',
-            fontSize: 14,
-            fontFamily: 'inherit',
+            border: 'none',
+            borderRadius: 6,
+            padding: '10px 40px 10px 12px',
+            fontSize: 13,
+            fontFamily: '"SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
             lineHeight: 1.5,
-            background: 'var(--pf-t--global--background--color--secondary--default)',
+            background: 'transparent',
             color: 'var(--pf-t--global--text--color--regular)',
             outline: 'none',
             boxSizing: 'border-box',
-            opacity: isStreaming ? 0.6 : 1,
+            opacity: isStreaming ? 0.5 : 1,
           }}
         />
-        <Button
-          variant="plain"
-          onClick={handleSend}
-          isDisabled={!value.trim() || isStreaming}
-          style={{
-            position: 'absolute',
-            right: 8,
-            bottom: 6,
-            padding: 6,
-            color: value.trim() && !isStreaming
-              ? 'var(--pf-t--global--color--brand--default)'
-              : 'var(--pf-t--global--text--color--subtle)',
-          }}
-          icon={<PaperPlaneIcon />}
-        />
+        {isStreaming ? (
+          onStop && (
+            <Button
+              variant="plain"
+              onClick={onStop}
+              style={{
+                position: 'absolute',
+                right: 4,
+                bottom: 4,
+                padding: 4,
+                color: 'var(--pf-t--global--icon--color--status--danger--default)',
+              }}
+              icon={<StopCircleIcon />}
+            />
+          )
+        ) : (
+          <Button
+            variant="plain"
+            onClick={handleSend}
+            isDisabled={!value.trim()}
+            style={{
+              position: 'absolute',
+              right: 4,
+              bottom: 4,
+              padding: 4,
+              color: value.trim()
+                ? 'var(--pf-t--global--color--brand--default)'
+                : 'var(--pf-t--global--text--color--subtle)',
+            }}
+            icon={<PaperPlaneIcon />}
+          />
+        )}
       </div>
     </div>
   )

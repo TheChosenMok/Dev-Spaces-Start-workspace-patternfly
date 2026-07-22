@@ -9,7 +9,6 @@ import {
   Title,
 } from '@patternfly/react-core'
 import {
-  ArrowLeftIcon,
   CogIcon,
   PluggedIcon,
   SearchIcon,
@@ -48,7 +47,6 @@ const VIEW_TITLES: Record<SettingsView, string> = {
 
 interface GlobalSettingsPanelProps {
   view: SettingsView
-  onBack: () => void
 }
 
 const INITIAL_PROVIDER_STATUS: Record<string, boolean> = {
@@ -58,7 +56,7 @@ const INITIAL_PROVIDER_STATUS: Record<string, boolean> = {
   'codex': false,
 }
 
-export function GlobalSettingsPanel({ view, onBack }: GlobalSettingsPanelProps) {
+export function GlobalSettingsPanel({ view }: GlobalSettingsPanelProps) {
   const [mcpServers, setMcpServers] = useState<McpServer[]>(MOCK_MCP_CATALOG)
   const [skills, setSkills] = useState<Skill[]>(MOCK_SKILLS_CATALOG)
   const [providerConnected, setProviderConnected] = useState<Record<string, boolean>>(INITIAL_PROVIDER_STATUS)
@@ -98,7 +96,6 @@ export function GlobalSettingsPanel({ view, onBack }: GlobalSettingsPanelProps) 
         alignItems: 'center',
         gap: 12,
       }}>
-        <Button variant="plain" icon={<ArrowLeftIcon />} onClick={onBack} aria-label="Back" style={{ padding: 4 }} />
         <Title headingLevel="h2" size="lg" style={{ margin: 0 }}>{VIEW_TITLES[view]}</Title>
       </div>
 

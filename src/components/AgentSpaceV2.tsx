@@ -11,6 +11,7 @@ import {
   Flex,
   FlexItem,
   MenuToggle,
+  MenuToggleAction,
   PageSection,
   Title,
 } from '@patternfly/react-core'
@@ -22,7 +23,6 @@ import {
   CubesIcon,
   DesktopIcon,
   WrenchIcon,
-  ExternalLinkAltIcon,
   PencilAltIcon,
   PlusCircleIcon,
   PluggedIcon,
@@ -257,6 +257,22 @@ export function AgentSpaceV2() {
     return () => { clearTimeout(thinkingDelay); if (streamingRef.current !== null) clearInterval(streamingRef.current) }
   }, [isStreaming, selectedAgentId])
 
+  const handleStopStreaming = useCallback(() => {
+    if (streamingRef.current !== null) {
+      clearInterval(streamingRef.current)
+      streamingRef.current = null
+    }
+    if (selectedAgentId) {
+      setChatMessages(prev => ({
+        ...prev,
+        [selectedAgentId]: (prev[selectedAgentId] ?? []).map(m =>
+          m.isStreaming ? { ...m, isStreaming: false } : m
+        ),
+      }))
+    }
+    setIsStreaming(false)
+  }, [selectedAgentId])
+
   return (
     <>
       <style>{`.pf-v6-c-page__main-container { align-self: stretch !important; max-height: 99% !important; }`}</style>
@@ -340,7 +356,7 @@ export function AgentSpaceV2() {
         {/* Main content area */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {activeSettingsView ? (
-            <GlobalSettingsPanel view={activeSettingsView} onBack={() => setActiveSettingsView(null)} />
+            <GlobalSettingsPanel view={activeSettingsView} />
           ) : isSelectedAuthenticated && selectedAgent ? (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
               {/* Toolbar — same as v1 AgentTerminal */}
@@ -369,16 +385,34 @@ export function AgentSpaceV2() {
                         return parts.length > 1 ? parts.slice(1).join(' - ') : selectedAgent.name.replace(toolName, '').replace(/^[\s-]+/, '') || selectedAgent.name
                       })()}
                     </FlexItem>
+                  </Flex>
+                </FlexItem>
+
+                <FlexItem>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
                     <FlexItem className="agent-toolbar-v2">
-                      <Dropdown isOpen={openInOpen} onSelect={() => setOpenInOpen(false)} onOpenChange={setOpenInOpen} popperProps={{ position: 'left' }}
+                      <Dropdown isOpen={openInOpen} onSelect={() => setOpenInOpen(false)} onOpenChange={setOpenInOpen} popperProps={{ position: 'right' }}
                         toggle={(toggleRef) => (
-                          <MenuToggle ref={toggleRef} onClick={() => setOpenInOpen(o => !o)} isExpanded={openInOpen} icon={<ExternalLinkAltIcon />}>
-                            Open in
-                          </MenuToggle>
+                          <MenuToggle
+                            ref={toggleRef}
+                            isExpanded={openInOpen}
+                            splitButtonItems={[
+                              <MenuToggleAction
+                                key="open-vscode"
+                                onClick={() => { /* open in VS Code */ }}
+                              >
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                  <BrandIcon id="vscode" size={16} />
+                                  Open in VS Code
+                                </span>
+                              </MenuToggleAction>,
+                            ]}
+                            onClick={() => setOpenInOpen(o => !o)}
+                          />
                         )}
                       >
                         <DropdownList>
-                          {EDITORS.filter(e => !('isCustom' in e)).map(editor => (
+                          {EDITORS.filter(e => !('isCustom' in e) && e.id !== 'vscode').map(editor => (
                             <DropdownItem key={editor.id} icon={hasBrandIcon(editor.id) ? <BrandIcon id={editor.id} size={18} /> : <DesktopIcon />}>
                               {editor.label}
                             </DropdownItem>
@@ -386,11 +420,6 @@ export function AgentSpaceV2() {
                         </DropdownList>
                       </Dropdown>
                     </FlexItem>
-                  </Flex>
-                </FlexItem>
-
-                <FlexItem>
-                  <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapXs' }}>
                     <style>{`
                       .agent-toolbar-v2 .pf-v6-c-menu-toggle,
                       .agent-toolbar-v2 .pf-v6-c-button {
@@ -461,10 +490,11 @@ export function AgentSpaceV2() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0, overflow: 'hidden' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   {/* Chat messages */}
-                  <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
+                  <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto' }}>
                     {currentMessages.length === 0 ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--pf-t--global--text--color--subtle)', fontSize: 14 }}>
-                        Send a message to start chatting.
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8, color: 'var(--pf-t--global--text--color--subtle)' }}>
+                        <TerminalIcon style={{ fontSize: 24, opacity: 0.5 }} />
+                        <span style={{ fontSize: 13 }}>Ask anything to get started</span>
                       </div>
                     ) : (
                       <>
@@ -474,7 +504,7 @@ export function AgentSpaceV2() {
                     )}
                   </div>
 
-                  <ChatInput onSend={handleSendMessage} isStreaming={isStreaming} />
+                  <ChatInput onSend={handleSendMessage} isStreaming={isStreaming} onStop={handleStopStreaming} />
                 </div>
 
                 {/* Right panel with tab views */}
@@ -484,16 +514,16 @@ export function AgentSpaceV2() {
                       {rightPanelView === 'git' && <GitPanel />}
                       {rightPanelView === 'editor' && <EditorPanel />}
                       {rightPanelView === 'terminal' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#1a1b26' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#1e1e1e' }}>
                           <div style={{
                             flex: 1, overflowY: 'auto', padding: '12px 16px',
                             fontFamily: '"SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                             fontSize: 13, lineHeight: '22px',
                           }}>
                             <div>
-                              <span style={{ color: '#7aa2f7' }}>~/{selectedProject?.name ?? 'workspace'}</span>
-                              <span style={{ color: '#565f89' }}> $ </span>
-                              <span style={{ animation: 'blink 1s step-end infinite', color: '#c0caf5' }}>▌</span>
+                              <span style={{ color: '#b0b0b0' }}>~/{selectedProject?.name ?? 'workspace'}</span>
+                              <span style={{ color: '#808080' }}> $ </span>
+                              <span style={{ animation: 'blink 1s step-end infinite', color: '#cccccc' }}>▌</span>
                             </div>
                             <style>{`@keyframes blink { 50% { opacity: 0; } }`}</style>
                           </div>

@@ -283,7 +283,7 @@ export function AgentSpace() {
         <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1, overflow: 'auto' }}>
           {activeSettingsView ? (
-            <GlobalSettingsPanel view={activeSettingsView} onBack={() => setActiveSettingsView(null)} />
+            <GlobalSettingsPanel view={activeSettingsView} />
           ) : isSelectedAuthenticated && selectedAgent ? (
             <AgentTerminal
               agent={selectedAgent}
