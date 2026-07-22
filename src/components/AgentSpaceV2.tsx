@@ -11,7 +11,6 @@ import {
   EmptyStateFooter,
   Flex,
   FlexItem,
-  Label,
   MenuToggle,
   MenuToggleAction,
   PageSection,
@@ -32,7 +31,6 @@ import {
   PlusCircleIcon,
   PluggedIcon,
   TerminalIcon,
-  TimesIcon,
 } from '@patternfly/react-icons'
 import type { Agent, AgentSettings, AgentToolId, Project, ToolAuth } from './agentSpaceTypes'
 import type { ChatMessage as ChatMessageType } from './agentSpaceV2Types'
@@ -80,10 +78,7 @@ export function AgentSpaceV2() {
     return INITIAL_AUTH
   })
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
-    () => MOCK_AGENTS.find(a => a.status === 'running')?.id ?? null,
-  )
-  const [connectedAgentIds, setConnectedAgentIds] = useState<Set<string>>(
-    () => new Set(MOCK_AGENTS.filter(a => a.status === 'running').map(a => a.id)),
+    () => MOCK_AGENTS[0]?.id ?? null,
   )
   const [addProjectModalOpen, setAddProjectModalOpen] = useState(false)
   const [addAgentModalOpen, setAddAgentModalOpen] = useState(false)
@@ -151,29 +146,11 @@ export function AgentSpaceV2() {
     return agentSettingsMap[selectedAgentId] ?? DEFAULT_AGENT_SETTINGS
   }, [selectedAgentId, agentSettingsMap])
   const addAgentProjectName = useMemo(() => projects.find(p => p.id === addAgentProjectId)?.name ?? '', [projects, addAgentProjectId])
-  const isConnected = selectedAgentId != null && connectedAgentIds.has(selectedAgentId)
 
   // --- Agent/project handlers (same as v1) ---
   const handleAuthenticate = useCallback((toolId: AgentToolId) => {
     setToolAuth(prev => prev.map(a => (a.toolId === toolId ? { ...a, authenticated: true } : a)))
   }, [])
-
-  const handleConnect = useCallback(() => {
-    if (!selectedAgentId) return
-    setAgents(prev => prev.map(a => (a.id === selectedAgentId ? { ...a, status: 'connecting' as const } : a)))
-    setTimeout(() => {
-      setAgents(prev => prev.map(a => (a.id === selectedAgentId ? { ...a, status: 'running' as const } : a)))
-      setConnectedAgentIds(prev => new Set(prev).add(selectedAgentId))
-    }, 1500)
-  }, [selectedAgentId])
-
-  const handleDisconnect = useCallback(() => {
-    if (!selectedAgentId) return
-    if (streamingRef.current !== null) { clearInterval(streamingRef.current); streamingRef.current = null }
-    setIsStreaming(false)
-    setAgents(prev => prev.map(a => (a.id === selectedAgentId ? { ...a, status: 'stopped' as const } : a)))
-    setConnectedAgentIds(prev => { const next = new Set(prev); next.delete(selectedAgentId); return next })
-  }, [selectedAgentId])
 
   const handleAddProject = useCallback((name: string, repoUrl: string) => {
     setProjects(prev => [...prev, { id: `proj-${nextProjectId++}`, name, repoUrl }])
@@ -184,8 +161,6 @@ export function AgentSpaceV2() {
     setAgents(prev => {
       const removed = prev.filter(a => a.projectId === projectId)
       if (removed.some(a => a.id === selectedAgentId)) selectAgent(null)
-      const removedIds = removed.map(a => a.id)
-      setConnectedAgentIds(prev => { const next = new Set(prev); removedIds.forEach(id => next.delete(id)); return next })
       return prev.filter(a => a.projectId !== projectId)
     })
   }, [selectedAgentId, selectAgent])
@@ -197,7 +172,7 @@ export function AgentSpaceV2() {
     const name = `${toolName} - ${summary}`
     const models = PROVIDER_MODELS[tool]
     setAgentSettingsMap(prev => ({ ...prev, [id]: { ...DEFAULT_AGENT_SETTINGS, model: models?.[0]?.id ?? DEFAULT_AGENT_SETTINGS.model } }))
-    setAgents(prev => [...prev, { id, name, tool, status: 'stopped', projectId, summary, lastActivity: Date.now() }])
+    setAgents(prev => [...prev, { id, name, tool, status: 'running', projectId, summary, lastActivity: Date.now() }])
     selectAgent(id)
   }, [selectAgent])
 
@@ -221,7 +196,6 @@ export function AgentSpaceV2() {
   }, [])
 
   const handleDeleteAgent = useCallback((agentId: string) => {
-    setConnectedAgentIds(prev => { const next = new Set(prev); next.delete(agentId); return next })
     if (agentId === selectedAgentId) selectAgent(null)
     setAgents(prev => prev.filter(a => a.id !== agentId))
   }, [selectedAgentId, selectAgent])
@@ -241,20 +215,6 @@ export function AgentSpaceV2() {
     if (!selectedAgentId) return
     setAgentSettingsMap(prev => ({ ...prev, [selectedAgentId]: newSettings }))
   }, [selectedAgentId])
-
-  // Auto-connect on select
-  const shouldAutoConnect = useMemo(() => {
-    if (!selectedAgentId) return false
-    if (connectedAgentIds.has(selectedAgentId)) return false
-    const agent = agents.find(a => a.id === selectedAgentId)
-    if (!agent || agent.status === 'connecting') return false
-    return toolAuth.find(a => a.toolId === agent.tool)?.authenticated ?? false
-  }, [selectedAgentId, connectedAgentIds, agents, toolAuth])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- handleConnect simulates async connection
-    if (shouldAutoConnect) handleConnect()
-  }, [shouldAutoConnect, handleConnect])
 
   // --- Chat handler ---
   const handleSendMessage = useCallback((content: string) => {
@@ -305,7 +265,7 @@ export function AgentSpaceV2() {
   const terminalKey = selectedAgent?.id
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronizing mock terminal output with component state
-    if (!terminalTool || !isConnected) { setTerminalLines([]); return }
+    if (!terminalTool) { setTerminalLines([]); return }
     const allLines = MOCK_TERMINAL_OUTPUT[terminalTool]
     setTerminalLines([])
     let index = 0
@@ -314,7 +274,7 @@ export function AgentSpaceV2() {
       else clearInterval(interval)
     }, 400)
     return () => clearInterval(interval)
-  }, [terminalKey, terminalTool, isConnected])
+  }, [terminalKey, terminalTool])
 
   return (
     <>
@@ -339,7 +299,6 @@ export function AgentSpaceV2() {
                 projects={projects}
                 agents={agents}
                 selectedAgentId={selectedAgentId}
-                connectedAgentIds={connectedAgentIds}
                 onSelectAgent={selectAgent}
                 onAddAgent={handleAddAgent}
                 onDeleteAgent={handleDeleteAgent}
@@ -400,7 +359,7 @@ export function AgentSpaceV2() {
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {activeSettingsView ? (
             <GlobalSettingsPanel view={activeSettingsView} onBack={() => setActiveSettingsView(null)} />
-          ) : isConnected && selectedAgent ? (
+          ) : isSelectedAuthenticated && selectedAgent ? (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Toolbar — same as v1 AgentTerminal */}
               <div style={{ containerType: 'inline-size', borderBottom: '1px solid var(--pf-t--global--border--color--default)' }}>
@@ -427,14 +386,6 @@ export function AgentSpaceV2() {
                         const parts = selectedAgent.name.split(' - ')
                         return parts.length > 1 ? parts.slice(1).join(' - ') : selectedAgent.name.replace(toolName, '').replace(/^[\s-]+/, '') || selectedAgent.name
                       })()}
-                    </FlexItem>
-                    <FlexItem>
-                      <Tooltip content="Connected">
-                        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          <Label color="green" isCompact className="toolbar-connected-label">connected</Label>
-                          <span className="toolbar-connected-dot" />
-                        </span>
-                      </Tooltip>
                     </FlexItem>
                   </Flex>
                 </FlexItem>
@@ -471,24 +422,12 @@ export function AgentSpaceV2() {
                         display: inline-flex; align-items: center; min-width: 12px;
                       }
                       .toolbar-commit-icon { margin-right: 0; }
-                      .toolbar-connected-dot {
-                        display: none;
-                        width: 10px; height: 10px; border-radius: 50%;
-                        background-color: #3e8635; cursor: default;
-                      }
                       @container (max-width: 1240px) {
                         .toolbar-provider-name { display: none !important; }
-                      }
-                      @container (max-width: 1140px) {
-                        .toolbar-connected-label { display: none !important; }
-                        .toolbar-connected-dot { display: inline-block !important; }
                       }
                       @container (max-width: 1040px) {
                         .toolbar-commit-text { display: none !important; }
                         .toolbar-commit-icon { margin-right: 0 !important; }
-                      }
-                      @container (max-width: 890px) {
-                        .toolbar-disconnect-text { display: none !important; }
                       }
                     `}</style>
 
@@ -545,9 +484,6 @@ export function AgentSpaceV2() {
                       </Dropdown>
                     </FlexItem>
 
-                    <FlexItem className="agent-toolbar-v2">
-                      <Tooltip content="Disconnect"><Button variant="secondary" icon={<TimesIcon />} onClick={handleDisconnect}><span className="toolbar-disconnect-text">Disconnect</span></Button></Tooltip>
-                    </FlexItem>
                   </Flex>
                 </FlexItem>
               </Flex>
@@ -560,7 +496,7 @@ export function AgentSpaceV2() {
                   <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
                     {currentMessages.length === 0 ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--pf-t--global--text--color--subtle)', fontSize: 14 }}>
-                        Connected. Send a message to start chatting.
+                        Send a message to start chatting.
                       </div>
                     ) : (
                       <>
@@ -599,14 +535,13 @@ export function AgentSpaceV2() {
               agent={selectedAgent}
               project={selectedProject}
               isAuthenticated={isSelectedAuthenticated}
-              onConnect={handleConnect}
               onAuthenticate={handleAuthenticate}
             />
           ) : (
             <PageSection style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
               <EmptyState icon={PluggedIcon} titleText="Agent Space v2" headingLevel="h2">
                 <EmptyStateBody>
-                  Select an agent from the sidebar to view details and connect, or add a new project to get started.
+                  Select an agent from the sidebar, or add a new project to get started.
                 </EmptyStateBody>
                 <EmptyStateFooter>
                   <EmptyStateActions>

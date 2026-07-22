@@ -1,6 +1,6 @@
 export type AgentToolId = 'claude-code' | 'codex' | 'opencode' | 'openshift-ai'
 
-export type AgentStatus = 'running' | 'stopped' | 'connecting'
+export type AgentStatus = 'running' | 'stopped'
 
 export interface Agent {
   id: string

@@ -50,10 +50,7 @@ export function AgentSpace() {
   })
 
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
-    () => MOCK_AGENTS.find(a => a.status === 'running')?.id ?? null,
-  )
-  const [connectedAgentIds, setConnectedAgentIds] = useState<Set<string>>(
-    () => new Set(MOCK_AGENTS.filter((a) => a.status === 'running').map((a) => a.id)),
+    () => MOCK_AGENTS[0]?.id ?? null,
   )
   const [addProjectModalOpen, setAddProjectModalOpen] = useState(false)
   const [addAgentModalOpen, setAddAgentModalOpen] = useState(false)
@@ -96,31 +93,6 @@ export function AgentSpace() {
     [],
   )
 
-  const handleConnect = useCallback(() => {
-    if (!selectedAgentId) return
-    setAgents((prev) =>
-      prev.map((a) => (a.id === selectedAgentId ? { ...a, status: 'connecting' as const } : a)),
-    )
-    setTimeout(() => {
-      setAgents((prev) =>
-        prev.map((a) => (a.id === selectedAgentId ? { ...a, status: 'running' as const } : a)),
-      )
-      setConnectedAgentIds((prev) => new Set(prev).add(selectedAgentId))
-    }, 1500)
-  }, [selectedAgentId])
-
-  const handleDisconnect = useCallback(() => {
-    if (!selectedAgentId) return
-    setAgents((prev) =>
-      prev.map((a) => (a.id === selectedAgentId ? { ...a, status: 'stopped' as const } : a)),
-    )
-    setConnectedAgentIds((prev) => {
-      const next = new Set(prev)
-      next.delete(selectedAgentId)
-      return next
-    })
-  }, [selectedAgentId])
-
   const handleAddProject = useCallback((name: string, repoUrl: string) => {
     const id = `proj-${nextProjectId++}`
     setProjects((prev) => [...prev, { id, name, repoUrl }])
@@ -132,12 +104,6 @@ export function AgentSpace() {
       setAgents((prev) => {
         const removed = prev.filter((a) => a.projectId === projectId)
         if (removed.some((a) => a.id === selectedAgentId)) setSelectedAgentId(null)
-        const removedIds = removed.map((a) => a.id)
-        setConnectedAgentIds((prev) => {
-          const next = new Set(prev)
-          removedIds.forEach((id) => next.delete(id))
-          return next
-        })
         return prev.filter((a) => a.projectId !== projectId)
       })
     },
@@ -155,7 +121,7 @@ export function AgentSpace() {
         ...prev,
         [id]: { ...DEFAULT_AGENT_SETTINGS, model: models?.[0]?.id ?? DEFAULT_AGENT_SETTINGS.model },
       }))
-      setAgents((prev) => [...prev, { id, name, tool, status: 'stopped', projectId, summary, lastActivity: Date.now() }])
+      setAgents((prev) => [...prev, { id, name, tool, status: 'running', projectId, summary, lastActivity: Date.now() }])
       setSelectedAgentId(id)
     },
     [],
@@ -193,11 +159,6 @@ export function AgentSpace() {
 
   const handleDeleteAgent = useCallback(
     (agentId: string) => {
-      setConnectedAgentIds((prev) => {
-        const next = new Set(prev)
-        next.delete(agentId)
-        return next
-      })
       if (agentId === selectedAgentId) setSelectedAgentId(null)
       setAgents((prev) => prev.filter((a) => a.id !== agentId))
     },
@@ -238,21 +199,6 @@ export function AgentSpace() {
     [projects, addAgentProjectId],
   )
 
-  const shouldAutoConnect = useMemo(() => {
-    if (!selectedAgentId) return false
-    if (connectedAgentIds.has(selectedAgentId)) return false
-    const agent = agents.find((a) => a.id === selectedAgentId)
-    if (!agent || agent.status === 'connecting') return false
-    return toolAuth.find((a) => a.toolId === agent.tool)?.authenticated ?? false
-  }, [selectedAgentId, connectedAgentIds, agents, toolAuth])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- handleConnect simulates async connection
-    if (shouldAutoConnect) handleConnect()
-  }, [shouldAutoConnect, handleConnect])
-
-  const isConnected = selectedAgentId != null && connectedAgentIds.has(selectedAgentId)
-
   return (
     <>
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -291,7 +237,6 @@ export function AgentSpace() {
             projects={projects}
             agents={agents}
             selectedAgentId={selectedAgentId}
-            connectedAgentIds={connectedAgentIds}
             onSelectAgent={setSelectedAgentId}
             onAddAgent={handleAddAgent}
             onDeleteAgent={handleDeleteAgent}
@@ -339,11 +284,10 @@ export function AgentSpace() {
           <div style={{ flex: 1, overflow: 'auto' }}>
           {activeSettingsView ? (
             <GlobalSettingsPanel view={activeSettingsView} onBack={() => setActiveSettingsView(null)} />
-          ) : isConnected && selectedAgent ? (
+          ) : isSelectedAuthenticated && selectedAgent ? (
             <AgentTerminal
               agent={selectedAgent}
               settings={selectedAgentSettings}
-              onDisconnect={handleDisconnect}
               onToolChange={handleToolChange}
               onSettingsChange={handleSettingsChange}
             />
@@ -352,7 +296,6 @@ export function AgentSpace() {
               agent={selectedAgent}
               project={selectedProject}
               isAuthenticated={isSelectedAuthenticated}
-              onConnect={handleConnect}
               onAuthenticate={handleAuthenticate}
             />
           ) : (
@@ -366,8 +309,7 @@ export function AgentSpace() {
             >
               <EmptyState icon={PluggedIcon} titleText="Agent Space" headingLevel="h2">
                 <EmptyStateBody>
-                  Select an agent from the sidebar to view details and connect, or add a new project
-                  to get started.
+                  Select an agent from the sidebar, or add a new project to get started.
                 </EmptyStateBody>
                 <EmptyStateFooter>
                   <EmptyStateActions>

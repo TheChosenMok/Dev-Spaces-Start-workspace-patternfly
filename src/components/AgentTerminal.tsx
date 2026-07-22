@@ -7,7 +7,6 @@ import {
   DropdownList,
   Flex,
   FlexItem,
-  Label,
   MenuToggle,
   MenuToggleAction,
   Tooltip,
@@ -20,7 +19,6 @@ import {
   ExternalLinkAltIcon,
   GithubIcon,
   TerminalIcon,
-  TimesIcon,
 } from '@patternfly/react-icons'
 import type { Agent, AgentSettings, AgentToolId } from './agentSpaceTypes'
 import { AGENT_TOOLS, MOCK_TERMINAL_OUTPUT } from './agentSpaceMockData'
@@ -33,12 +31,11 @@ import { DiffPanel } from './DiffPanel'
 interface AgentTerminalProps {
   agent: Agent
   settings: AgentSettings
-  onDisconnect: () => void
   onToolChange: (tool: AgentToolId) => void
   onSettingsChange: (settings: AgentSettings) => void
 }
 
-export function AgentTerminal({ agent, settings, onDisconnect, onToolChange, onSettingsChange }: AgentTerminalProps) {
+export function AgentTerminal({ agent, settings, onToolChange, onSettingsChange }: AgentTerminalProps) {
   const [lines, setLines] = useState<string[]>([])
   const allLines = MOCK_TERMINAL_OUTPUT[agent.tool]
 
@@ -88,9 +85,6 @@ export function AgentTerminal({ agent, settings, onDisconnect, onToolChange, onS
                 const parts = agent.name.split(' - ')
                 return parts.length > 1 ? parts.slice(1).join(' - ') : agent.name.replace(toolName, '').replace(/^[\s-]+/, '') || agent.name
               })()}
-            </FlexItem>
-            <FlexItem>
-              <Label color="green" isCompact>connected</Label>
             </FlexItem>
           </Flex>
         </FlexItem>
@@ -237,16 +231,6 @@ export function AgentTerminal({ agent, settings, onDisconnect, onToolChange, onS
               </Dropdown>
             </FlexItem>
 
-            {/* Disconnect */}
-            <FlexItem className="agent-toolbar">
-              <Button
-                variant="secondary"
-                icon={<TimesIcon />}
-                onClick={onDisconnect}
-              >
-                Disconnect
-              </Button>
-            </FlexItem>
           </Flex>
         </FlexItem>
       </Flex>
