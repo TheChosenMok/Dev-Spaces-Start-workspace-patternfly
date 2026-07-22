@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button,
-  Divider,
   Dropdown,
   DropdownItem,
   DropdownList,
@@ -12,14 +11,11 @@ import {
   Flex,
   FlexItem,
   MenuToggle,
-  MenuToggleAction,
   PageSection,
   Title,
-  Tooltip,
 } from '@patternfly/react-core'
 import {
   ArrowLeftIcon,
-  CloudUploadAltIcon,
   CodeBranchIcon,
   CodeIcon,
   CogIcon,
@@ -27,7 +23,7 @@ import {
   DesktopIcon,
   WrenchIcon,
   ExternalLinkAltIcon,
-  GithubIcon,
+  PencilAltIcon,
   PlusCircleIcon,
   PluggedIcon,
   TerminalIcon,
@@ -47,6 +43,8 @@ import { AgentProviderDropdown } from './AgentProviderDropdown'
 import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
 import { DiffPanel } from './DiffPanel'
+import { GitPanel } from './GitPanel'
+import { EditorPanel } from './EditorPanel'
 import { GlobalSettingsPanel, type SettingsView } from './GlobalSettingsPanel'
 
 const AUTH_STORAGE_KEY = 'agent-space-v2-auth'
@@ -102,9 +100,11 @@ export function AgentSpaceV2() {
 
   // --- Toolbar state ---
   const [openInOpen, setOpenInOpen] = useState(false)
-  const [commitOpen, setCommitOpen] = useState(false)
-  const [terminalPanelOpen, setTerminalPanelOpen] = useState(false)
-  const [diffPanelOpen, setDiffPanelOpen] = useState(false)
+  type RightPanelView = 'changes' | 'git' | 'editor' | 'terminal'
+  const [rightPanelView, setRightPanelView] = useState<RightPanelView | null>(null)
+  const toggleRightPanel = useCallback((view: RightPanelView) => {
+    setRightPanelView(prev => prev === view ? null : view)
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(toolAuth))
@@ -129,9 +129,7 @@ export function AgentSpaceV2() {
   const selectAgent = useCallback((id: string | null) => {
     setSelectedAgentId(id)
     setOpenInOpen(false)
-    setCommitOpen(false)
-    setTerminalPanelOpen(false)
-    setDiffPanelOpen(false)
+    setRightPanelView(null)
   }, [])
 
   // --- Derived values ---
@@ -278,7 +276,8 @@ export function AgentSpaceV2() {
 
   return (
     <>
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, height: '100%' }}>
+      <style>{`.pf-v6-c-page__main-container { align-self: stretch !important; max-height: 99% !important; }`}</style>
+      <div style={{ display: 'flex', height: '100%' }}>
         {/* Left sidebar — identical to v1 */}
         <div style={{
           width: 260, minWidth: 260,
@@ -360,7 +359,7 @@ export function AgentSpaceV2() {
           {activeSettingsView ? (
             <GlobalSettingsPanel view={activeSettingsView} onBack={() => setActiveSettingsView(null)} />
           ) : isSelectedAuthenticated && selectedAgent ? (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
               {/* Toolbar — same as v1 AgentTerminal */}
               <div style={{ containerType: 'inline-size', borderBottom: '1px solid var(--pf-t--global--border--color--default)' }}>
               <Flex
@@ -386,6 +385,23 @@ export function AgentSpaceV2() {
                         const parts = selectedAgent.name.split(' - ')
                         return parts.length > 1 ? parts.slice(1).join(' - ') : selectedAgent.name.replace(toolName, '').replace(/^[\s-]+/, '') || selectedAgent.name
                       })()}
+                    </FlexItem>
+                    <FlexItem className="agent-toolbar-v2">
+                      <Dropdown isOpen={openInOpen} onSelect={() => setOpenInOpen(false)} onOpenChange={setOpenInOpen} popperProps={{ position: 'left' }}
+                        toggle={(toggleRef) => (
+                          <MenuToggle ref={toggleRef} onClick={() => setOpenInOpen(o => !o)} isExpanded={openInOpen} icon={<ExternalLinkAltIcon />}>
+                            Open in
+                          </MenuToggle>
+                        )}
+                      >
+                        <DropdownList>
+                          {EDITORS.filter(e => !('isCustom' in e)).map(editor => (
+                            <DropdownItem key={editor.id} icon={hasBrandIcon(editor.id) ? <BrandIcon id={editor.id} size={18} /> : <DesktopIcon />}>
+                              {editor.label}
+                            </DropdownItem>
+                          ))}
+                        </DropdownList>
+                      </Dropdown>
                     </FlexItem>
                   </Flex>
                 </FlexItem>
@@ -421,67 +437,36 @@ export function AgentSpaceV2() {
                       .agent-toolbar-v2 .pf-v6-c-menu-toggle.pf-m-split-button .pf-v6-c-menu-toggle__controls .pf-v6-c-menu-toggle__toggle-icon {
                         display: inline-flex; align-items: center; min-width: 12px;
                       }
-                      .toolbar-commit-icon { margin-right: 0; }
                       @container (max-width: 1240px) {
                         .toolbar-provider-name { display: none !important; }
                       }
-                      @container (max-width: 1040px) {
-                        .toolbar-commit-text { display: none !important; }
-                        .toolbar-commit-icon { margin-right: 0 !important; }
-                      }
                     `}</style>
 
-                    <FlexItem className="agent-toolbar-v2">
-                      <Dropdown isOpen={openInOpen} onSelect={() => setOpenInOpen(false)} onOpenChange={setOpenInOpen} popperProps={{ position: 'right' }}
-                        toggle={(toggleRef) => (
-                          <MenuToggle ref={toggleRef} onClick={() => setOpenInOpen(o => !o)} isExpanded={openInOpen} icon={<ExternalLinkAltIcon />}>
-                            Open in
-                          </MenuToggle>
-                        )}
-                      >
-                        <DropdownList>
-                          {EDITORS.filter(e => !('isCustom' in e)).map(editor => (
-                            <DropdownItem key={editor.id} icon={hasBrandIcon(editor.id) ? <BrandIcon id={editor.id} size={18} /> : <DesktopIcon />}>
-                              {editor.label}
-                            </DropdownItem>
-                          ))}
-                        </DropdownList>
-                      </Dropdown>
-                    </FlexItem>
-
-                    <FlexItem className="agent-toolbar-v2">
-                      <Tooltip content={terminalPanelOpen ? 'Hide terminal' : 'Show terminal'}>
-                        <Button variant="control" icon={<TerminalIcon />} aria-label="Toggle terminal panel"
-                          onClick={() => setTerminalPanelOpen(prev => !prev)}
-                          style={{ width: 28, justifyContent: 'center', ...(terminalPanelOpen ? { background: 'var(--pf-t--global--background--color--action--plain--clicked)' } : {}) }}
-                        />
-                      </Tooltip>
-                    </FlexItem>
-
-                    <FlexItem className="agent-toolbar-v2">
-                      <Tooltip content={diffPanelOpen ? 'Hide diff' : 'Show diff'}>
-                        <Button variant="control" icon={<CodeIcon />} aria-label="Toggle diff panel"
-                          onClick={() => setDiffPanelOpen(prev => !prev)}
-                          style={{ width: 28, justifyContent: 'center', ...(diffPanelOpen ? { background: 'var(--pf-t--global--background--color--action--plain--clicked)' } : {}) }}
-                        />
-                      </Tooltip>
-                    </FlexItem>
-
-                    <FlexItem className="agent-toolbar-v2">
-                      <Dropdown isOpen={commitOpen} onSelect={() => setCommitOpen(false)} onOpenChange={setCommitOpen} popperProps={{ position: 'right' }}
-                        toggle={(toggleRef) => (
-                          <MenuToggle ref={toggleRef} isExpanded={commitOpen} onClick={() => setCommitOpen(o => !o)} variant="primary"
-                            splitButtonItems={[<MenuToggleAction key="commit-push-action"><CloudUploadAltIcon className="toolbar-commit-icon" /><span className="toolbar-commit-text">Commit &amp; push</span></MenuToggleAction>]}
-                          />
-                        )}
-                      >
-                        <DropdownList>
-                          <DropdownItem key="commit" icon={<CodeBranchIcon />}>Commit</DropdownItem>
-                          <DropdownItem key="push" icon={<CloudUploadAltIcon />}>Push</DropdownItem>
-                          <Divider key="separator" />
-                          <DropdownItem key="create-pr" icon={<GithubIcon />}>Create PR</DropdownItem>
-                        </DropdownList>
-                      </Dropdown>
+                    <FlexItem style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {([
+                        { key: 'changes' as const, label: 'Changes', icon: <CodeIcon style={{ fontSize: 12 }} /> },
+                        { key: 'git' as const, label: 'Git', icon: <CodeBranchIcon style={{ fontSize: 12 }} /> },
+                        { key: 'editor' as const, label: 'Editor', icon: <PencilAltIcon style={{ fontSize: 12 }} /> },
+                        { key: 'terminal' as const, label: 'Terminal', icon: <TerminalIcon style={{ fontSize: 12 }} /> },
+                      ]).map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => toggleRightPanel(tab.key)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            padding: '4px 10px', fontSize: 12, fontWeight: 500,
+                            height: 28, border: 'none', cursor: 'pointer', borderRadius: 4,
+                            background: rightPanelView === tab.key
+                              ? 'var(--pf-t--global--background--color--action--plain--clicked)'
+                              : 'transparent',
+                            color: rightPanelView === tab.key
+                              ? 'var(--pf-t--global--text--color--regular)'
+                              : 'var(--pf-t--global--text--color--subtle)',
+                          }}
+                        >
+                          {tab.icon} {tab.label}
+                        </button>
+                      ))}
                     </FlexItem>
 
                   </Flex>
@@ -490,7 +475,7 @@ export function AgentSpaceV2() {
               </div>
 
               {/* Chat area + panels */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0, overflow: 'hidden' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   {/* Chat messages */}
                   <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
@@ -507,25 +492,24 @@ export function AgentSpaceV2() {
                   </div>
 
                   <ChatInput onSend={handleSendMessage} isStreaming={isStreaming} />
-
-                  {/* Terminal panel (below chat, same as v1) */}
-                  {terminalPanelOpen && (
-                    <div style={{
-                      height: 200, borderTop: '2px solid var(--pf-t--global--border--color--default)',
-                      background: '#1e1e1e', color: '#aaaaaa', fontFamily: 'monospace', fontSize: 13, padding: 12, overflowY: 'auto',
-                    }}>
-                      <div style={{ color: '#888', marginBottom: 8 }}>Terminal</div>
-                      {terminalLines.map((line, i) => <div key={i} style={{ color: '#33cc33' }}>{line}</div>)}
-                      <div>$ <span style={{ animation: 'blink 1s step-end infinite' }}>_</span></div>
-                      <style>{`@keyframes blink { 50% { opacity: 0; } }`}</style>
-                    </div>
-                  )}
                 </div>
 
-                {/* Diff panel (right side) */}
-                {diffPanelOpen && (
-                  <div style={{ width: 480, minWidth: 480, borderLeft: '1px solid var(--pf-t--global--border--color--default)' }}>
-                    <DiffPanel />
+                {/* Right panel with tab views */}
+                {rightPanelView !== null && (
+                  <div style={{ width: 480, minWidth: 480, minHeight: 0, borderLeft: '1px solid var(--pf-t--global--border--color--default)' }}>
+                      {rightPanelView === 'changes' && <DiffPanel />}
+                      {rightPanelView === 'git' && <GitPanel />}
+                      {rightPanelView === 'editor' && <EditorPanel />}
+                      {rightPanelView === 'terminal' && (
+                        <div style={{
+                          minHeight: '100%', background: '#1e1e1e', color: '#aaaaaa',
+                          fontFamily: 'monospace', fontSize: 13, padding: 12,
+                        }}>
+                          {terminalLines.map((line, i) => <div key={i} style={{ color: '#33cc33' }}>{line}</div>)}
+                          <div>$ <span style={{ animation: 'blink 1s step-end infinite' }}>_</span></div>
+                          <style>{`@keyframes blink { 50% { opacity: 0; } }`}</style>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

@@ -86,6 +86,39 @@ export function AgentTerminal({ agent, settings, onToolChange, onSettingsChange 
                 return parts.length > 1 ? parts.slice(1).join(' - ') : agent.name.replace(toolName, '').replace(/^[\s-]+/, '') || agent.name
               })()}
             </FlexItem>
+            <FlexItem className="agent-toolbar">
+              <Dropdown
+                isOpen={openInOpen}
+                onSelect={() => setOpenInOpen(false)}
+                onOpenChange={setOpenInOpen}
+                popperProps={{ position: 'left' }}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={() => setOpenInOpen((o) => !o)}
+                    isExpanded={openInOpen}
+                    icon={<ExternalLinkAltIcon />}
+                  >
+                    Open in
+                  </MenuToggle>
+                )}
+              >
+                <DropdownList>
+                  {EDITORS.filter((e) => !('isCustom' in e)).map((editor) => (
+                    <DropdownItem
+                      key={editor.id}
+                      icon={
+                        hasBrandIcon(editor.id)
+                          ? <BrandIcon id={editor.id} size={18} />
+                          : <DesktopIcon />
+                      }
+                    >
+                      {editor.label}
+                    </DropdownItem>
+                  ))}
+                </DropdownList>
+              </Dropdown>
+            </FlexItem>
           </Flex>
         </FlexItem>
 
@@ -121,41 +154,6 @@ export function AgentTerminal({ agent, settings, onToolChange, onSettingsChange 
                 justify-content: center;
               }
             `}</style>
-            {/* Open in */}
-            <FlexItem className="agent-toolbar">
-              <Dropdown
-                isOpen={openInOpen}
-                onSelect={() => setOpenInOpen(false)}
-                onOpenChange={setOpenInOpen}
-                popperProps={{ position: 'right' }}
-                toggle={(toggleRef) => (
-                  <MenuToggle
-                    ref={toggleRef}
-                    onClick={() => setOpenInOpen((o) => !o)}
-                    isExpanded={openInOpen}
-                    icon={<ExternalLinkAltIcon />}
-                  >
-                    Open in
-                  </MenuToggle>
-                )}
-              >
-                <DropdownList>
-                  {EDITORS.filter((e) => !('isCustom' in e)).map((editor) => (
-                    <DropdownItem
-                      key={editor.id}
-                      icon={
-                        hasBrandIcon(editor.id)
-                          ? <BrandIcon id={editor.id} size={18} />
-                          : <DesktopIcon />
-                      }
-                    >
-                      {editor.label}
-                    </DropdownItem>
-                  ))}
-                </DropdownList>
-              </Dropdown>
-            </FlexItem>
-
             {/* Terminal toggle */}
             <FlexItem className="agent-toolbar">
               <Tooltip content={terminalPanelOpen ? 'Hide terminal' : 'Show terminal'}>
