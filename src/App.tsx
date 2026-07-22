@@ -23,15 +23,14 @@ import {
 } from '@patternfly/react-core'
 import {
   DesktopIcon,
+  ExternalLinkAltIcon,
   MoonIcon,
   OutlinedQuestionCircleIcon,
-  RobotIcon,
   RunningIcon,
   SunIcon,
   ThLargeIcon,
   UserIcon,
 } from '@patternfly/react-icons'
-import { AgentSpace } from './components/AgentSpace'
 import { AgentSpaceV2 } from './components/AgentSpaceV2'
 import { CreateWorkspaceSplitTab } from './components/CreateWorkspaceSplitTab'
 import { UserPreferences } from './components/UserPreferences'
@@ -59,7 +58,7 @@ const DARK_THEME_CLASS = 'pf-v6-theme-dark'
 
 function getRouteFromHash(): string {
   const route = window.location.hash.replace('#/', '').replace('#', '')
-  if (route === 'workspaces' || route === 'create-workspace' || route === 'agent-space' || route === 'agent-space-v2') return route
+  if (route === 'workspaces' || route === 'create-workspace' || route === 'agent-space-v2') return route
   if (route.startsWith('user-preferences')) {
     const tab = route.split('/')[1]
     if (tab && VALID_PREF_TABS.has(tab)) return route
@@ -132,6 +131,15 @@ export default function App() {
       </MastheadMain>
       <MastheadContent>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<ExternalLinkAltIcon />}
+            iconPosition="end"
+            onClick={() => setActivePage(activePage === 'agent-space-v2' ? 'workspaces' : 'agent-space-v2')}
+          >
+            {activePage === 'agent-space-v2' ? 'Workspaces' : 'Agent Space'}
+          </Button>
           <Button variant="plain" aria-label="Applications">
             <ThLargeIcon />
           </Button>
@@ -246,33 +254,15 @@ export default function App() {
               </NavItem>
             ))}
           </NavGroup>
-          <NavGroup title="AI">
-            <NavItem
-              itemId="agent-space"
-              isActive={activePage === 'agent-space'}
-              icon={<RobotIcon />}
-            >
-              Agent Space
-            </NavItem>
-            <NavItem
-              itemId="agent-space-v2"
-              isActive={activePage === 'agent-space-v2'}
-              icon={<RobotIcon />}
-            >
-              Agent Space v2
-            </NavItem>
-          </NavGroup>
         </Nav>
       </PageSidebarBody>
     </PageSidebar>
   )
 
   return (
-    <Page masthead={masthead} sidebar={sidebar}>
+    <Page masthead={masthead} sidebar={activePage === 'agent-space-v2' ? undefined : sidebar}>
       {signedIn ? (
-        activePage === 'agent-space' ? (
-          <AgentSpace />
-        ) : activePage === 'agent-space-v2' ? (
+        activePage === 'agent-space-v2' ? (
           <AgentSpaceV2 />
         ) : activePage.startsWith('user-preferences') ? (
           <UserPreferences

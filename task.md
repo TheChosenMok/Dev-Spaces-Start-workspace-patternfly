@@ -1,0 +1,4 @@
+- Convert CLI streaming UI to follow typical styling of other code assistants streaming not chat like
+- Improve git diff styling
+- Improve user terminal styling
+- Toggle in header between tradional dev spaces and agent mode
