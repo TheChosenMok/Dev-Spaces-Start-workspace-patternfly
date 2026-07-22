@@ -42,7 +42,7 @@ const MOCK_COMMITS: Commit[] = [
   { hash: 'c9d2f38', message: 'Update database connection config', author: 'mokhtar', time: '1d ago' },
 ]
 
-const MOCK_AHEAD = 2
+const MOCK_AHEAD: number = 2
 const MOCK_BEHIND = 0
 
 const STATUS_COLORS: Record<string, string> = {
