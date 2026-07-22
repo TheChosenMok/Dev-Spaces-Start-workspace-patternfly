@@ -5,8 +5,6 @@ metadata:
   language: TypeScript
   projectType: React
   provider: Red Hat
-attributes:
-  controller.devfile.io/storage-type: per-user
 components:
   - name: tools
     container:
