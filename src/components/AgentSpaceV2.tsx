@@ -48,6 +48,7 @@ import { EDITORS } from './EditorDropdown'
 import { AgentProviderDropdown } from './AgentProviderDropdown'
 import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
+import { DiffPanel } from './DiffPanel'
 import { GlobalSettingsPanel, type SettingsView } from './GlobalSettingsPanel'
 
 const AUTH_STORAGE_KEY = 'agent-space-v2-auth'
@@ -585,16 +586,10 @@ export function AgentSpaceV2() {
                   )}
                 </div>
 
-                {/* Diff panel (right side, same as v1) */}
+                {/* Diff panel (right side) */}
                 {diffPanelOpen && (
-                  <div style={{
-                    width: 400, borderLeft: '2px solid var(--pf-t--global--border--color--default)',
-                    background: '#1e1e1e', color: '#aaaaaa', fontFamily: 'monospace', fontSize: 13, padding: 12, overflowY: 'auto',
-                  }}>
-                    <div style={{ color: '#888', marginBottom: 8 }}>Diff</div>
-                    <div style={{ color: '#33cc33' }}>+ Added line example</div>
-                    <div style={{ color: '#ff4444' }}>- Removed line example</div>
-                    <div>  Unchanged context line</div>
+                  <div style={{ width: 480, minWidth: 480, borderLeft: '1px solid var(--pf-t--global--border--color--default)' }}>
+                    <DiffPanel />
                   </div>
                 )}
               </div>
