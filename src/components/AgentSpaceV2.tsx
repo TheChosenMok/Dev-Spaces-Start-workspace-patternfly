@@ -30,7 +30,7 @@ import {
 } from '@patternfly/react-icons'
 import type { Agent, AgentSettings, AgentToolId, Project, ToolAuth } from './agentSpaceTypes'
 import type { ChatMessage as ChatMessageType } from './agentSpaceV2Types'
-import { AGENT_TOOLS, DEFAULT_AGENT_SETTINGS, INITIAL_AUTH, MOCK_AGENTS, MOCK_PROJECTS, PROVIDER_MODELS, MOCK_TERMINAL_OUTPUT } from './agentSpaceMockData'
+import { AGENT_TOOLS, DEFAULT_AGENT_SETTINGS, INITIAL_AUTH, MOCK_AGENTS, MOCK_PROJECTS, PROVIDER_MODELS } from './agentSpaceMockData'
 import { MOCK_STREAMING_RESPONSES, MOCK_THINKING, MOCK_TOOL_CALLS } from './agentSpaceV2MockData'
 import { AgentSidebar } from './AgentSidebar'
 import { AgentDetail } from './AgentDetail'
@@ -257,23 +257,6 @@ export function AgentSpaceV2() {
     return () => { clearTimeout(thinkingDelay); if (streamingRef.current !== null) clearInterval(streamingRef.current) }
   }, [isStreaming, selectedAgentId])
 
-  // --- Terminal lines for the terminal panel ---
-  const [terminalLines, setTerminalLines] = useState<string[]>([])
-  const terminalTool = selectedAgent?.tool
-  const terminalKey = selectedAgent?.id
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronizing mock terminal output with component state
-    if (!terminalTool) { setTerminalLines([]); return }
-    const allLines = MOCK_TERMINAL_OUTPUT[terminalTool]
-    setTerminalLines([])
-    let index = 0
-    const interval = setInterval(() => {
-      if (index < allLines.length) { setTerminalLines(prev => [...prev, allLines[index]]); index++ }
-      else clearInterval(interval)
-    }, 400)
-    return () => clearInterval(interval)
-  }, [terminalKey, terminalTool])
-
   return (
     <>
       <style>{`.pf-v6-c-page__main-container { align-self: stretch !important; max-height: 99% !important; }`}</style>
@@ -496,18 +479,24 @@ export function AgentSpaceV2() {
 
                 {/* Right panel with tab views */}
                 {rightPanelView !== null && (
-                  <div style={{ width: 480, minWidth: 480, minHeight: 0, borderLeft: '1px solid var(--pf-t--global--border--color--default)' }}>
+                  <div style={{ width: 560, minWidth: 560, minHeight: 0, borderLeft: '1px solid var(--pf-t--global--border--color--default)' }}>
                       {rightPanelView === 'changes' && <DiffPanel />}
                       {rightPanelView === 'git' && <GitPanel />}
                       {rightPanelView === 'editor' && <EditorPanel />}
                       {rightPanelView === 'terminal' && (
-                        <div style={{
-                          minHeight: '100%', background: '#1e1e1e', color: '#aaaaaa',
-                          fontFamily: 'monospace', fontSize: 13, padding: 12,
-                        }}>
-                          {terminalLines.map((line, i) => <div key={i} style={{ color: '#33cc33' }}>{line}</div>)}
-                          <div>$ <span style={{ animation: 'blink 1s step-end infinite' }}>_</span></div>
-                          <style>{`@keyframes blink { 50% { opacity: 0; } }`}</style>
+                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#1a1b26' }}>
+                          <div style={{
+                            flex: 1, overflowY: 'auto', padding: '12px 16px',
+                            fontFamily: '"SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                            fontSize: 13, lineHeight: '22px',
+                          }}>
+                            <div>
+                              <span style={{ color: '#7aa2f7' }}>~/{selectedProject?.name ?? 'workspace'}</span>
+                              <span style={{ color: '#565f89' }}> $ </span>
+                              <span style={{ animation: 'blink 1s step-end infinite', color: '#c0caf5' }}>▌</span>
+                            </div>
+                            <style>{`@keyframes blink { 50% { opacity: 0; } }`}</style>
+                          </div>
                         </div>
                       )}
                   </div>

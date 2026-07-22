@@ -1,3 +1,2 @@
 - Convert CLI streaming UI to follow typical styling of other code assistants streaming not chat like
 - Remove duplicate  button in settings page where pressing the back button in one of the sub settings items exits the settings page when
-- Improve user terminal styling

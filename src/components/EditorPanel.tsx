@@ -111,19 +111,30 @@ function FileTreeItem({ node, depth, selectedFile, expandedFolders, onSelectFile
     <>
       <div
         onClick={() => isFolder ? onToggleFolder(node.path) : onSelectFile(node.path)}
+        className="editor-tree-item"
         style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          padding: '3px 8px', paddingLeft: 8 + depth * 14,
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '5px 8px', paddingLeft: 12 + depth * 16,
           cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap',
+          borderRadius: 4, margin: '0 4px',
           background: isSelected ? 'var(--pf-t--global--background--color--action--plain--clicked)' : undefined,
           color: isSelected ? 'var(--pf-t--global--text--color--regular)' : 'var(--pf-t--global--text--color--subtle)',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          transition: 'background 0.1s',
         }}
       >
         {isFolder
-          ? (isExpanded ? <FolderOpenIcon style={{ fontSize: 13, color: '#dcb67a', flexShrink: 0 }} /> : <FolderIcon style={{ fontSize: 13, color: '#dcb67a', flexShrink: 0 }} />)
-          : <FileCodeIcon style={{ fontSize: 13, color: '#519aba', flexShrink: 0 }} />
+          ? (isExpanded
+            ? <FolderOpenIcon style={{ fontSize: 14, color: '#dcb67a', flexShrink: 0 }} />
+            : <FolderIcon style={{ fontSize: 14, color: '#dcb67a', flexShrink: 0 }} />)
+          : <FileCodeIcon style={{ fontSize: 14, color: '#519aba', flexShrink: 0 }} />
         }
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.name}</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isSelected ? 500 : 400 }}>{node.name}</span>
+        {isFolder && (
+          <span style={{ marginLeft: 'auto', fontSize: 9, opacity: 0.4, flexShrink: 0 }}>
+            {isExpanded ? '▾' : '▸'}
+          </span>
+        )}
       </div>
       {isFolder && isExpanded && node.children?.map(child => (
         <FileTreeItem
@@ -155,20 +166,27 @@ export function EditorPanel() {
 
   const content = MOCK_FILE_CONTENTS[selectedFile] ?? ''
   const lines = content.split('\n')
+  const fileName = selectedFile.split('/').pop() ?? ''
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
+      <style>{`
+        .editor-tree-item:hover {
+          background: var(--pf-t--global--background--color--secondary--hover, rgba(0,0,0,0.04)) !important;
+        }
+      `}</style>
+
       {/* File tree */}
       <div style={{
-        width: 160, minWidth: 160,
+        width: 170, minWidth: 170,
         borderRight: '1px solid var(--pf-t--global--border--color--default)',
         overflowY: 'auto', overflowX: 'hidden',
-        padding: '6px 0',
+        padding: '8px 0',
         background: 'var(--pf-t--global--background--color--secondary--default)',
       }}>
         <div style={{
-          padding: '4px 12px 8px', fontSize: 10, fontWeight: 600,
-          textTransform: 'uppercase', letterSpacing: '0.5px',
+          padding: '4px 16px 10px', fontSize: 11, fontWeight: 600,
+          textTransform: 'uppercase', letterSpacing: '0.6px',
           color: 'var(--pf-t--global--text--color--subtle)',
         }}>
           Explorer
@@ -187,32 +205,35 @@ export function EditorPanel() {
       </div>
 
       {/* Code display */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', background: '#fff' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
         {/* File tab */}
         <div style={{
-          padding: '6px 12px',
+          padding: '0 14px', height: 36,
           borderBottom: '1px solid var(--pf-t--global--border--color--default)',
           fontSize: 12, color: 'var(--pf-t--global--text--color--regular)',
           display: 'flex', alignItems: 'center', gap: 6,
           background: 'var(--pf-t--global--background--color--secondary--default)',
         }}>
-          <FileCodeIcon style={{ fontSize: 12, color: '#519aba' }} />
-          {selectedFile.split('/').pop()}
+          <FileCodeIcon style={{ fontSize: 13, color: '#519aba' }} />
+          <span style={{ fontWeight: 500 }}>{fileName}</span>
+          <span style={{ fontSize: 11, color: 'var(--pf-t--global--text--color--subtle)', marginLeft: 4 }}>
+            {selectedFile.replace(`/${fileName}`, '').replace(fileName, '')}
+          </span>
         </div>
 
         {/* Code lines */}
         <table style={{
           borderCollapse: 'collapse', width: '100%',
-          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-          fontSize: 12, lineHeight: '20px',
+          fontFamily: '"SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+          fontSize: 12, lineHeight: '22px',
         }}>
           <tbody>
             {lines.map((line, i) => (
               <tr key={i}>
                 <td style={{
-                  textAlign: 'right', padding: '0 12px 0 8px',
-                  color: '#6e7781', userSelect: 'none', width: 40, minWidth: 40,
-                  borderRight: '1px solid var(--pf-t--global--border--color--default)',
+                  textAlign: 'right', padding: '0 14px 0 12px',
+                  color: 'var(--pf-t--global--text--color--subtle)', userSelect: 'none',
+                  width: 44, minWidth: 44, fontSize: 11, opacity: 0.6,
                 }}>
                   {i + 1}
                 </td>

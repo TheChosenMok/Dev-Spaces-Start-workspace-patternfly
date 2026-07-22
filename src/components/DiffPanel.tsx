@@ -84,241 +84,244 @@ const MOCK_DIFF_FILES: DiffFile[] = [
 ]
 
 const DIFF_STYLES = `
-  .diff-panel-root {
-    --diff-add-bg: #dafbe1;
-    --diff-add-gutter: #ccffd8;
-    --diff-add-text: #116329;
-    --diff-remove-bg: #ffebe9;
-    --diff-remove-gutter: #ffd7d5;
-    --diff-remove-text: #82071e;
-    --diff-hunk-bg: #ddf4ff;
-    --diff-hunk-text: #0969da;
-    --diff-border: #d1d9e0;
-    --diff-gutter-text: #6e7781;
-    --diff-line-hover: #f6f8fa;
+  .diff-panel {
+    --diff-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --diff-bg: var(--pf-t--global--background--color--primary--default);
+    --diff-border: var(--pf-t--global--border--color--default);
+    --diff-text: var(--pf-t--global--text--color--regular);
+    --diff-text-muted: var(--pf-t--global--text--color--subtle);
+    --diff-surface: var(--pf-t--global--background--color--secondary--default);
+    --diff-hover: var(--pf-t--global--background--color--action--plain--hover);
+
+    --diff-add-line: rgba(52, 211, 89, 0.12);
+    --diff-add-gutter: rgba(52, 211, 89, 0.22);
+    --diff-add-text: #56d364;
+    --diff-remove-line: rgba(255, 85, 85, 0.12);
+    --diff-remove-gutter: rgba(255, 85, 85, 0.22);
+    --diff-remove-text: #ff6b6b;
+    --diff-hunk-bg: rgba(56, 139, 253, 0.08);
+    --diff-hunk-text: rgba(56, 139, 253, 0.8);
   }
 
-  .diff-file-block {
-    border: 1px solid var(--diff-border);
-    border-radius: 8px;
-    margin-bottom: 16px;
-    overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  :root:not(.pf-v6-theme-dark) .diff-panel {
+    --diff-add-line: rgba(34, 170, 50, 0.18);
+    --diff-add-gutter: rgba(34, 170, 50, 0.30);
+    --diff-add-text: #116b29;
+    --diff-remove-line: rgba(225, 45, 45, 0.16);
+    --diff-remove-gutter: rgba(225, 45, 45, 0.28);
+    --diff-remove-text: #c42b2b;
+    --diff-hunk-bg: rgba(56, 139, 253, 0.06);
+    --diff-hunk-text: rgba(56, 139, 253, 0.7);
+  }
+
+  .diff-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--diff-border);
+    font-size: 12px;
+    color: var(--diff-text-muted);
+    position: sticky;
+    top: 0;
+    background: var(--diff-bg);
+    z-index: 3;
+  }
+
+  .diff-summary-count {
+    font-weight: 600;
+    color: var(--diff-text);
+    font-size: 13px;
+  }
+
+  .diff-stat-pill {
+    font-family: var(--diff-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .diff-stat-pill.add {
+    color: var(--diff-add-text);
+    background: var(--diff-add-gutter);
+  }
+  .diff-stat-pill.remove {
+    color: var(--diff-remove-text);
+    background: var(--diff-remove-gutter);
+  }
+
+  .diff-file {
+    border-bottom: 1px solid var(--diff-border);
+  }
+  .diff-file:last-child {
+    border-bottom: none;
   }
 
   .diff-file-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
-    background: #f6f8fa;
-    border-bottom: 1px solid var(--diff-border);
-    font-size: 13px;
+    padding: 8px 16px;
     cursor: pointer;
     user-select: none;
+    font-size: 12px;
     position: sticky;
-    top: 0;
-    z-index: 1;
+    top: 38px;
+    z-index: 2;
+    background: var(--diff-bg);
+    border-bottom: 1px solid var(--diff-border);
+    transition: background 0.1s;
   }
   .diff-file-header:hover {
-    background: #eef1f4;
+    background: var(--diff-surface);
   }
   .diff-file-header.collapsed {
     border-bottom: none;
   }
 
-  .diff-file-chevron {
+  .diff-chevron {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    color: #57606a;
+    color: var(--diff-text-muted);
+    font-size: 12px;
     transition: transform 0.15s ease;
     flex-shrink: 0;
   }
-  .diff-file-chevron.open {
+  .diff-chevron.open {
     transform: rotate(90deg);
   }
 
   .diff-file-path {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #1f2328;
+    font-family: var(--diff-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--diff-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
   }
 
   .diff-file-stats {
-    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     flex-shrink: 0;
+    font-family: var(--diff-mono);
+    font-size: 11px;
+    font-weight: 600;
   }
 
-  .diff-stat-block {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-  }
-  .diff-stat-block.add { background: #2da44e; }
-  .diff-stat-block.remove { background: #cf222e; }
-  .diff-stat-block.neutral { background: #d1d9e0; }
-
-  .diff-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  .diff-lines {
+    font-family: var(--diff-mono);
     font-size: 12px;
     line-height: 20px;
-    table-layout: fixed;
+    overflow-x: auto;
   }
 
-  .diff-line-context:hover td {
-    background: var(--diff-line-hover) !important;
+  .diff-line {
+    display: flex;
+    min-width: fit-content;
+  }
+  .diff-line:hover .diff-gutter,
+  .diff-line.ctx:hover {
+    background: var(--diff-hover);
   }
 
   .diff-gutter {
-    color: var(--diff-gutter-text);
+    width: 40px;
+    min-width: 40px;
     text-align: right;
-    padding: 0 10px;
+    padding: 0 8px;
+    color: var(--diff-text-muted);
+    opacity: 0.5;
     user-select: none;
-    vertical-align: top;
-    width: 44px;
-    min-width: 44px;
-    font-size: 12px;
-    cursor: pointer;
+    font-size: 11px;
+    flex-shrink: 0;
   }
-  .diff-gutter:hover {
-    color: #0969da;
-  }
-
-  .diff-gutter-border {
+  .diff-gutter-divider {
     border-right: 1px solid var(--diff-border);
   }
 
-  .diff-gutter-add { background: var(--diff-add-gutter); }
-  .diff-gutter-remove { background: var(--diff-remove-gutter); }
+  .diff-line.add .diff-gutter { background: var(--diff-add-gutter); opacity: 0.7; }
+  .diff-line.remove .diff-gutter { background: var(--diff-remove-gutter); opacity: 0.7; }
 
-  .diff-content {
+  .diff-code {
     padding: 0 16px;
     white-space: pre;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex: 1;
   }
-  .diff-content-add {
-    background: var(--diff-add-bg);
-    color: var(--diff-add-text);
+
+  .diff-line.add .diff-code {
+    background: var(--diff-add-line);
+    color: var(--diff-text);
   }
-  .diff-content-remove {
-    background: var(--diff-remove-bg);
-    color: var(--diff-remove-text);
+  .diff-line.remove .diff-code {
+    background: var(--diff-remove-line);
+    color: var(--diff-text);
   }
 
   .diff-prefix {
-    user-select: none;
     display: inline-block;
-    width: 12px;
+    width: 14px;
+    user-select: none;
+    color: var(--diff-text-muted);
   }
+  .diff-line.add .diff-prefix { color: var(--diff-add-text); }
+  .diff-line.remove .diff-prefix { color: var(--diff-remove-text); }
 
-  .diff-hunk-row td {
-    background: var(--diff-hunk-bg);
+  .diff-hunk {
+    padding: 6px 16px 6px 96px;
     color: var(--diff-hunk-text);
-    padding: 6px 16px;
-    font-size: 12px;
-    font-style: italic;
-    border-top: 1px solid var(--diff-border);
-    border-bottom: 1px solid var(--diff-border);
+    background: var(--diff-hunk-bg);
+    font-size: 11px;
+    font-family: var(--diff-mono);
+    user-select: none;
   }
-
-  .diff-summary-bar {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--diff-border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    position: sticky;
-    top: 0;
-    background: #fff;
-    z-index: 2;
-  }
-
-  .diff-summary-count {
-    font-weight: 600;
-    color: #1f2328;
-  }
-
-  .diff-summary-additions { color: #1a7f37; font-weight: 600; font-size: 12px; }
-  .diff-summary-deletions { color: #cf222e; font-weight: 600; font-size: 12px; }
 `
 
 function DiffFileBlock({ file }: { file: DiffFile }) {
   const [collapsed, setCollapsed] = useState(false)
 
-  const total = file.additions + file.deletions
-  const blocks = 5
-  const addBlocks = total > 0 ? Math.round((file.additions / total) * blocks) : 0
-  const removeBlocks = total > 0 ? blocks - addBlocks : 0
-  const neutralBlocks = total === 0 ? blocks : 0
-
   return (
-    <div className="diff-file-block">
+    <div className="diff-file">
       <div
         className={`diff-file-header${collapsed ? ' collapsed' : ''}`}
         onClick={() => setCollapsed(prev => !prev)}
       >
-        <span className={`diff-file-chevron${collapsed ? '' : ' open'}`}>
+        <span className={`diff-chevron${collapsed ? '' : ' open'}`}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
             <path d="M4.7 2.3a.5.5 0 0 1 .7 0l3.3 3.3a.5.5 0 0 1 0 .7L5.4 9.7a.5.5 0 0 1-.7-.7L7.8 6 4.7 3a.5.5 0 0 1 0-.7z" />
           </svg>
         </span>
         <span className="diff-file-path">{file.path}</span>
         <span className="diff-file-stats">
-          {file.additions > 0 && <span style={{ color: '#1a7f37', fontWeight: 600, fontSize: 12, marginRight: 4 }}>+{file.additions}</span>}
-          {file.deletions > 0 && <span style={{ color: '#cf222e', fontWeight: 600, fontSize: 12, marginRight: 6 }}>-{file.deletions}</span>}
-          {Array.from({ length: addBlocks }, (_, j) => <span key={`a${j}`} className="diff-stat-block add" />)}
-          {Array.from({ length: removeBlocks }, (_, j) => <span key={`r${j}`} className="diff-stat-block remove" />)}
-          {Array.from({ length: neutralBlocks }, (_, j) => <span key={`n${j}`} className="diff-stat-block neutral" />)}
+          {file.additions > 0 && <span className="diff-stat-pill add">+{file.additions}</span>}
+          {file.deletions > 0 && <span className="diff-stat-pill remove">-{file.deletions}</span>}
         </span>
       </div>
 
       {!collapsed && (
-        <table className="diff-table">
-          <colgroup>
-            <col style={{ width: 44 }} />
-            <col style={{ width: 44 }} />
-            <col />
-          </colgroup>
-          <tbody>
-            {file.lines.map((line, i) => {
-              if (line.type === 'hunk') {
-                return (
-                  <tr key={i} className="diff-hunk-row">
-                    <td colSpan={3}>{line.content}</td>
-                  </tr>
-                )
-              }
+        <div className="diff-lines">
+          {file.lines.map((line, i) => {
+            if (line.type === 'hunk') {
+              return <div key={i} className="diff-hunk">{line.content}</div>
+            }
 
-              const gutterClass = line.type === 'add' ? ' diff-gutter-add' : line.type === 'remove' ? ' diff-gutter-remove' : ''
-              const contentClass = line.type === 'add' ? ' diff-content-add' : line.type === 'remove' ? ' diff-content-remove' : ''
-              const prefix = line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '
+            const prefix = line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '
+            const cls = line.type === 'context' ? 'ctx' : line.type
 
-              return (
-                <tr key={i} className={line.type === 'context' ? 'diff-line-context' : ''}>
-                  <td className={`diff-gutter${gutterClass}`}>{line.oldLineNum ?? ''}</td>
-                  <td className={`diff-gutter diff-gutter-border${gutterClass}`}>{line.newLineNum ?? ''}</td>
-                  <td className={`diff-content${contentClass}`}>
-                    <span className="diff-prefix">{prefix}</span>{line.content}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+            return (
+              <div key={i} className={`diff-line ${cls}`}>
+                <span className="diff-gutter">{line.oldLineNum ?? ''}</span>
+                <span className="diff-gutter diff-gutter-divider">{line.newLineNum ?? ''}</span>
+                <span className="diff-code">
+                  <span className="diff-prefix">{prefix}</span>{line.content}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
@@ -329,23 +332,21 @@ export function DiffPanel() {
   const totalDeletions = MOCK_DIFF_FILES.reduce((sum, f) => sum + f.deletions, 0)
 
   return (
-    <div className="diff-panel-root" style={{ background: '#fff', height: '100%', overflowY: 'auto' }}>
+    <div className="diff-panel" style={{ height: '100%', overflowY: 'auto', background: 'var(--diff-bg)' }}>
       <style>{DIFF_STYLES}</style>
 
-      <div className="diff-summary-bar">
-        <CodeBranchIcon style={{ color: '#57606a', fontSize: 14 }} />
+      <div className="diff-summary">
+        <CodeBranchIcon style={{ color: 'var(--diff-text-muted)', fontSize: 14 }} />
         <span className="diff-summary-count">
           {MOCK_DIFF_FILES.length} file{MOCK_DIFF_FILES.length !== 1 ? 's' : ''} changed
         </span>
-        <span className="diff-summary-additions">+{totalAdditions}</span>
-        <span className="diff-summary-deletions">-{totalDeletions}</span>
+        <span className="diff-stat-pill add">+{totalAdditions}</span>
+        <span className="diff-stat-pill remove">-{totalDeletions}</span>
       </div>
 
-      <div style={{ padding: 16 }}>
-        {MOCK_DIFF_FILES.map((file, i) => (
-          <DiffFileBlock key={i} file={file} />
-        ))}
-      </div>
+      {MOCK_DIFF_FILES.map((file, i) => (
+        <DiffFileBlock key={i} file={file} />
+      ))}
     </div>
   )
 }
